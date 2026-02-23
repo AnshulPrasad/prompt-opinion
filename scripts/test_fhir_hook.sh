@@ -108,7 +108,7 @@ payload_malformed_fhir='{
 
 echo "Target RPC endpoint: ${RPC_URL}"
 echo "Using API key prefix: ${API_KEY:0:6}..."
-echo "Run your server separately, for example: uvicorn multi_tool_agent.agent:a2a_app --host 127.0.0.1 --port 8001 --log-level info"
+echo "Run your server separately, for example: uvicorn multi_tool_agent.app:a2a_app --host 127.0.0.1 --port 8001 --log-level info"
 
 # Case A: no API key
 post_json "Case A - Missing API key (expect 401, hook not called)" "no" "$payload_no_metadata"
