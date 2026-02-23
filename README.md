@@ -140,13 +140,33 @@ Open `.env` and set your Google API key:
 GOOGLE_API_KEY=your-google-api-key-here
 ```
 
-### 4 — Run the server
+### 4 — Run the agent
+
+There are two ways to run the agent depending on what you want to do:
+
+**Option A — `adk web` (recommended for local development)**
+
+Opens a visual chat UI in your browser. Great for testing your agent, tools, and instructions before wiring it up to Prompt Opinion. No API key header required.
+
+```bash
+adk web .
+```
+
+Then open **http://localhost:8000** in your browser. You can chat with the agent directly from the UI.
+
+> **Note:** `adk web` bypasses the A2A middleware, so FHIR tools will report missing credentials (no metadata is sent). Everything else — tool calls, model responses, instructions — works normally.
+
+---
+
+**Option B — A2A server (required to connect to Prompt Opinion)**
+
+Runs the full production stack: API key enforcement, A2A protocol, FHIR metadata bridging.
 
 ```bash
 uvicorn multi_tool_agent.app:a2a_app --host 0.0.0.0 --port 8001
 ```
 
-### 5 — Verify it's running
+### 5 — Verify it's running (A2A mode)
 
 ```bash
 curl http://localhost:8001/.well-known/agent-card.json
