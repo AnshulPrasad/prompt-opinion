@@ -16,8 +16,6 @@ from shared.app_factory import create_a2a_app
 
 from .agent import root_agent
 
-print(os.getenv('PO_PLATFORM_BASE_URL'))
-
 a2a_app = create_a2a_app(
     agent=root_agent,
     name="healthcare_fhir_agent",
