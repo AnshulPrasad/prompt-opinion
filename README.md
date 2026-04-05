@@ -202,7 +202,7 @@ The most complete example. Receives FHIR credentials from the caller via A2A met
 | `healthcare_agent/agent.py` | Model, instruction, tools list |
 | `healthcare_agent/app.py` | Agent name, description, URL, FHIR extension URI |
 | `shared/tools/fhir.py` | Add or modify FHIR query tools |
-| `shared/middleware.py` | Update `VALID_API_KEYS` |
+| `.env` / secrets manager | Configure trusted `X-API-Key` values |
 
 **Use this as your starting point if** your agent needs to query patient data from a FHIR server.
 
@@ -380,6 +380,9 @@ Copy `.env.example` to `.env` and set values before starting any server.
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `GOOGLE_API_KEY` | **Yes** | — | Google AI Studio key for Gemini |
+| `AGENT_API_KEYS` | No | — | Comma-separated trusted `X-API-Key` values for authenticated agents |
+| `API_KEY_PRIMARY` | No | — | First trusted `X-API-Key` value |
+| `API_KEY_SECONDARY` | No | — | Second trusted `X-API-Key` value |
 | `LOG_FULL_PAYLOAD` | No | `true` | Log full JSON-RPC request body on each request |
 | `LOG_HOOK_RAW_OBJECTS` | No | `false` | Dump raw ADK callback objects — debug only |
 | `HEALTHCARE_AGENT_URL` | No | `http://localhost:8001` | Public URL for the healthcare agent |
@@ -425,28 +428,20 @@ When `require_api_key=False`, the agent card's `security` field is empty — thi
 
 ### Updating the allowed keys (authenticated agents only)
 
-Open `shared/middleware.py` and update `VALID_API_KEYS`:
+Do not edit source code. Configure trusted keys through environment variables
+or secret-manager-backed env injection:
 
-```python
-VALID_API_KEYS: set = {
-    "my-secret-key-123",   # ← replace with your real keys
-    "another-valid-key",
-}
+```env
+# Option A: comma-separated
+AGENT_API_KEYS=my-secret-key-123,another-valid-key
+
+# Option B: separate values
+API_KEY_PRIMARY=my-secret-key-123
+API_KEY_SECONDARY=another-valid-key
 ```
 
-In production, load from environment variables or a secrets manager:
-
-```python
-import os
-
-VALID_API_KEYS: set = {
-    k for k in [
-        os.getenv("API_KEY_PRIMARY"),
-        os.getenv("API_KEY_SECONDARY"),
-    ]
-    if k
-}
-```
+If no trusted keys are configured, authenticated agents return `503 Service
+Unavailable` for `POST /` and log a `security_configuration_missing` error.
 
 ### Endpoints (per agent)
 

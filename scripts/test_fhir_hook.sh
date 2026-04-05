@@ -15,7 +15,7 @@ set -euo pipefail
 
 BASE_URL="${1:-http://127.0.0.1:8001}"
 RPC_URL="${BASE_URL%/}/"
-API_KEY="${API_KEY:-my-secret-key-123}"
+API_KEY="${API_KEY:-$(printf '%s' "${AGENT_API_KEYS:-}" | cut -d',' -f1)}"
 
 post_json() {
   local label="$1"
@@ -156,6 +156,10 @@ payload_malformed_fhir='{
 # ── Run tests ──────────────────────────────────────────────────────────────────
 
 echo "Target RPC endpoint: ${RPC_URL}"
+if [[ -z "${API_KEY}" ]]; then
+  echo "No API key found. Set API_KEY directly or export AGENT_API_KEYS in your shell."
+  exit 1
+fi
 echo "Using API key prefix: ${API_KEY:0:6}..."
 echo "Run your server separately, for example:"
 echo "  uvicorn healthcare_agent.app:a2a_app --host 127.0.0.1 --port 8001 --log-level info"

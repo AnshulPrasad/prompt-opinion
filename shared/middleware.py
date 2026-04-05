@@ -5,8 +5,8 @@ Every request is blocked unless it carries a valid X-API-Key header.
 The only public endpoint is /.well-known/agent-card.json, which callers
 need to discover the agent before they can authenticate.
 
-In production, load keys from environment variables or a secrets manager
-(e.g. Azure Key Vault, AWS Secrets Manager) rather than hardcoding them here.
+Allowed keys are loaded from environment variables or secrets-manager-backed
+environment injection. Source code no longer contains trusted caller keys.
 """
 import json
 import logging
@@ -23,11 +23,28 @@ logger = logging.getLogger(__name__)
 
 LOG_FULL_PAYLOAD = os.getenv("LOG_FULL_PAYLOAD", "true").lower() == "true"
 
-# Replace / extend with keys loaded from your environment or secrets store.
-VALID_API_KEYS: set = {
-    "my-secret-key-123",    # your application's key
-    "another-valid-key",    # any other trusted callers
-}
+
+def _load_valid_api_keys() -> set[str]:
+    """
+    Load trusted caller API keys from environment variables.
+
+    Supported inputs:
+      - AGENT_API_KEYS="key-one,key-two"
+      - API_KEY_PRIMARY="key-one"
+      - API_KEY_SECONDARY="key-two"
+    """
+    keys: set[str] = set()
+
+    csv_keys = os.getenv("AGENT_API_KEYS", "")
+    if csv_keys:
+        keys.update(k.strip() for k in csv_keys.split(",") if k.strip())
+
+    for name in ("API_KEY_PRIMARY", "API_KEY_SECONDARY"):
+        value = os.getenv(name, "").strip()
+        if value:
+            keys.add(value)
+
+    return keys
 
 
 class ApiKeyMiddleware(BaseHTTPMiddleware):
@@ -38,6 +55,11 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
     convenience, bridges FHIR metadata from params.message.metadata up to
     params.metadata so the ADK callback path can find it.
     """
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.valid_api_keys = _load_valid_api_keys()
+        self._missing_key_config_logged = False
 
     async def dispatch(self, request: Request, call_next):
         # Read and parse the body so we can log it and inspect metadata.
@@ -90,6 +112,20 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
         if request.url.path == "/.well-known/agent-card.json":
             return await call_next(request)
 
+        if not self.valid_api_keys:
+            if not self._missing_key_config_logged:
+                logger.error(
+                    "security_configuration_missing no_api_keys_loaded expected_env=AGENT_API_KEYS/API_KEY_PRIMARY/API_KEY_SECONDARY"
+                )
+                self._missing_key_config_logged = True
+            return JSONResponse(
+                status_code=503,
+                content={
+                    "error": "Service Unavailable",
+                    "detail": "Server authentication is not configured.",
+                },
+            )
+
         api_key = request.headers.get("X-API-Key")
 
         if not api_key:
@@ -102,7 +138,7 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
                 content={"error": "Unauthorized", "detail": "X-API-Key header is required"},
             )
 
-        if api_key not in VALID_API_KEYS:
+        if api_key not in self.valid_api_keys:
             logger.warning(
                 "security_rejected_invalid_api_key path=%s method=%s key_prefix=%s",
                 request.url.path, request.method, api_key[:6],
