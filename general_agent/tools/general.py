@@ -14,6 +14,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from google.adk.tools import ToolContext
 
+from shared.tracing import trace_fields_from_state
+
 logger = logging.getLogger(__name__)
 
 
@@ -53,12 +55,17 @@ def get_current_datetime(timezone: str, tool_context: ToolContext) -> dict:
     Returns a dict with date, time, day of week, and full ISO-8601 datetime.
     """
     tz_str = (timezone or "UTC").strip()
-    logger.info("tool_get_current_datetime timezone=%s", tz_str)
+    trace = trace_fields_from_state(tool_context.state)
+    logger.info(
+        "tool_start name=get_current_datetime task_id=%s context_id=%s message_id=%s patient_id=%s fields=%s",
+        trace["task_id"], trace["context_id"], trace["message_id"], trace["patient_id"],
+        {"timezone": tz_str},
+    )
 
     try:
         tz  = ZoneInfo(tz_str)
         now = datetime.now(tz)
-        return {
+        result = {
             "status":      "success",
             "timezone":    tz_str,
             "datetime":    now.isoformat(),
@@ -66,14 +73,24 @@ def get_current_datetime(timezone: str, tool_context: ToolContext) -> dict:
             "time":        now.strftime("%H:%M:%S"),
             "day_of_week": now.strftime("%A"),
         }
+        logger.info(
+            "tool_finish name=get_current_datetime task_id=%s context_id=%s message_id=%s patient_id=%s status=%s",
+            trace["task_id"], trace["context_id"], trace["message_id"], trace["patient_id"], result["status"],
+        )
+        return result
     except ZoneInfoNotFoundError:
-        return {
+        result = {
             "status":        "error",
             "error_message": (
                 f"Unknown timezone: '{tz_str}'. "
                 "Use IANA format, e.g. 'America/Chicago', 'UTC', 'Europe/London'."
             ),
         }
+        logger.info(
+            "tool_finish name=get_current_datetime task_id=%s context_id=%s message_id=%s patient_id=%s status=%s",
+            trace["task_id"], trace["context_id"], trace["message_id"], trace["patient_id"], result["status"],
+        )
+        return result
 
 
 # ── Tool: ICD-10 lookup ────────────────────────────────────────────────────────
@@ -95,23 +112,33 @@ def look_up_icd10(term: str, tool_context: ToolContext) -> dict:
     """
     raw  = (term or "").strip()
     key  = raw.lower()
-    logger.info("tool_look_up_icd10 term=%s", raw)
+    trace = trace_fields_from_state(tool_context.state)
+    logger.info(
+        "tool_start name=look_up_icd10 task_id=%s context_id=%s message_id=%s patient_id=%s fields=%s",
+        trace["task_id"], trace["context_id"], trace["message_id"], trace["patient_id"],
+        {"term": raw},
+    )
 
     # Exact match
     if key in _ICD10_TABLE:
         code, description = _ICD10_TABLE[key]
-        return {
+        result = {
             "status":      "success",
             "term":        raw,
             "icd10_code":  code,
             "description": description,
         }
+        logger.info(
+            "tool_finish name=look_up_icd10 task_id=%s context_id=%s message_id=%s patient_id=%s status=%s",
+            trace["task_id"], trace["context_id"], trace["message_id"], trace["patient_id"], result["status"],
+        )
+        return result
 
     # Partial / substring match — return the first hit
     matches = [(k, v) for k, v in _ICD10_TABLE.items() if key in k or k in key]
     if matches:
         matched_key, (code, description) = matches[0]
-        return {
+        result = {
             "status":       "success",
             "term":         raw,
             "matched_term": matched_key,
@@ -119,8 +146,13 @@ def look_up_icd10(term: str, tool_context: ToolContext) -> dict:
             "icd10_code":   code,
             "description":  description,
         }
+        logger.info(
+            "tool_finish name=look_up_icd10 task_id=%s context_id=%s message_id=%s patient_id=%s status=%s",
+            trace["task_id"], trace["context_id"], trace["message_id"], trace["patient_id"], result["status"],
+        )
+        return result
 
-    return {
+    result = {
         "status":          "not_found",
         "term":            raw,
         "error_message":   (
@@ -132,3 +164,8 @@ def look_up_icd10(term: str, tool_context: ToolContext) -> dict:
         ),
         "available_terms": sorted(_ICD10_TABLE.keys()),
     }
+    logger.info(
+        "tool_finish name=look_up_icd10 task_id=%s context_id=%s message_id=%s patient_id=%s status=%s",
+        trace["task_id"], trace["context_id"], trace["message_id"], trace["patient_id"], result["status"],
+    )
+    return result

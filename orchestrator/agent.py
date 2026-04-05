@@ -9,7 +9,10 @@ Session state is shared, so FHIR credentials extracted by this agent's
 before_model_callback are available to the healthcare sub-agent's tools.
 
 Sub-agents registered:
-  healthcare_fhir_agent  — patient demographics, medications, conditions, observations
+  healthcare_fhir_agent  — patient demographics, medications, conditions, observations,
+                            allergies, encounters, procedures, reports, documents,
+                            immunizations, care plans, medication statements,
+                            service requests, imaging
   general_agent          — date/time queries, ICD-10 code lookups
 
 To add another sub-agent:
@@ -19,12 +22,12 @@ To add another sub-agent:
   4. Update the instruction to describe when to use it.
 """
 from google.adk.agents import Agent
-from google.adk.tools.agent_tool import AgentTool
 
 from healthcare_agent.agent import root_agent as healthcare_agent
 from general_agent.agent import root_agent as general_agent
 from shared.fhir_hook import extract_fhir_context
 from shared.model_config import gemini_flash_with_retries
+from shared.tracing import TracingAgentTool
 
 root_agent = Agent(
     name="orchestrator",
@@ -41,7 +44,10 @@ root_agent = Agent(
         "  - Patient demographics (name, DOB, gender, contacts)\n"
         "  - Active medications and dosage instructions\n"
         "  - Active conditions and diagnoses (problem list)\n"
-        "  - Recent observations — vitals, lab results, social history\n\n"
+        "  - Recent observations — vitals, lab results, social history\n"
+        "  - Allergies and intolerances\n"
+        "  - Encounters, procedures, diagnostic reports, and document references\n"
+        "  - Immunizations, care plans, medication statements, service requests, and imaging studies\n\n"
         "Use general_agent for:\n"
         "  - Current date and time in any timezone\n"
         "  - ICD-10-CM code lookups\n\n"
@@ -49,8 +55,8 @@ root_agent = Agent(
         "If a sub-agent returns an error, relay it clearly and suggest a resolution."
     ),
     tools=[
-        AgentTool(agent=healthcare_agent),
-        AgentTool(agent=general_agent),
+        TracingAgentTool(agent=healthcare_agent),
+        TracingAgentTool(agent=general_agent),
     ],
     # The orchestrator extracts FHIR context once into session state.
     # The healthcare sub-agent's tools read from that same shared state.

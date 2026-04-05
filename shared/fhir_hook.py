@@ -153,6 +153,9 @@ def extract_fhir_context(callback_context, llm_request):
         correlation["task_id"], correlation["context_id"], correlation["message_id"],
         selected_source, metadata_keys,
     )
+    callback_context.state["task_id"] = correlation["task_id"] or ""
+    callback_context.state["context_id"] = correlation["context_id"] or ""
+    callback_context.state["message_id"] = correlation["message_id"] or ""
 
     if not metadata:
         logger.info(
@@ -187,9 +190,6 @@ def extract_fhir_context(callback_context, llm_request):
         callback_context.state["fhir_url"]   = fhir_data.get("fhirUrl",   "")
         callback_context.state["fhir_token"] = fhir_data.get("fhirToken", "")
         callback_context.state["patient_id"] = fhir_data.get("patientId", "")
-        callback_context.state["task_id"]    = correlation["task_id"] or ""
-        callback_context.state["context_id"] = correlation["context_id"] or ""
-        callback_context.state["message_id"] = correlation["message_id"] or ""
         logger.info("FHIR_URL_FOUND value=%s",         callback_context.state["fhir_url"]   or "[EMPTY]")
         logger.info("FHIR_TOKEN_FOUND fingerprint=%s", token_fingerprint(callback_context.state["fhir_token"]))
         logger.info("FHIR_PATIENT_FOUND value=%s",     callback_context.state["patient_id"] or "[EMPTY]")
