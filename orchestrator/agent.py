@@ -24,10 +24,11 @@ from google.adk.tools.agent_tool import AgentTool
 from healthcare_agent.agent import root_agent as healthcare_agent
 from general_agent.agent import root_agent as general_agent
 from shared.fhir_hook import extract_fhir_context
+from shared.model_config import gemini_flash_with_retries
 
 root_agent = Agent(
     name="orchestrator",
-    model="gemini-2.5-flash",
+    model=gemini_flash_with_retries(),
     description=(
         "A clinical orchestrator that routes questions to the right specialist agent. "
         "Delegates FHIR patient data queries to healthcare_fhir_agent and "

@@ -15,6 +15,7 @@ To customise:
 from google.adk.agents import Agent
 
 from shared.fhir_hook import extract_fhir_context
+from shared.model_config import gemini_flash_with_retries
 from shared.tools import (
     get_active_conditions,
     get_active_medications,
@@ -34,7 +35,7 @@ from shared.tools import (
 
 root_agent = Agent(
     name="healthcare_fhir_agent",
-    model="gemini-2.5-flash",
+    model=gemini_flash_with_retries(),
     description=(
         "A clinical assistant that queries a patient's FHIR health record "
         "to answer questions about demographics, medications, conditions, observations, "
