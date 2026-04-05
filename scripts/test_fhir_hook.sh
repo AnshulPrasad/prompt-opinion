@@ -13,6 +13,13 @@
 #   uvicorn healthcare_agent.app:a2a_app --host 127.0.0.1 --port 8001 --log-level info
 set -euo pipefail
 
+if [[ -f ".env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env
+  set +a
+fi
+
 BASE_URL="${1:-http://127.0.0.1:8001}"
 RPC_URL="${BASE_URL%/}/"
 API_KEY="${API_KEY:-$(printf '%s' "${AGENT_API_KEYS:-}" | cut -d',' -f1)}"
