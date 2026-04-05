@@ -375,7 +375,8 @@ A2A request
 
 ## Configuration reference
 
-Copy `.env.example` to `.env` and set values before starting any server.
+This repo currently expects a local `.env` file. Set values there before
+starting any server.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
