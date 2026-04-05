@@ -509,7 +509,6 @@ def get_medication_statement_resources_full(tool_context: ToolContext) -> dict:
     return _fetch_full_resource_bundle(
         "MedicationStatement",
         tool_context,
-        search_params={"_sort": "-date"},
     )
 
 
@@ -523,7 +522,6 @@ def get_service_request_resources_full(tool_context: ToolContext) -> dict:
     return _fetch_full_resource_bundle(
         "ServiceRequest",
         tool_context,
-        search_params={"_sort": "-date"},
     )
 
 
@@ -537,5 +535,4 @@ def get_imaging_study_resources_full(tool_context: ToolContext) -> dict:
     return _fetch_full_resource_bundle(
         "ImagingStudy",
         tool_context,
-        search_params={"_sort": "-date"},
     )
