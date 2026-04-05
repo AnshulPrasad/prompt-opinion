@@ -104,7 +104,7 @@ def _coding_display(codings: list) -> str:
 
 def get_patient_demographics(tool_context: ToolContext) -> dict:
     """
-    Fetches the demographic information for the current patient from the FHIR server.
+    Use for identity and contact questions about the current patient.
 
     Returns name, date of birth, gender, and primary contact details.
     No arguments required — the patient identity comes from the session context.
@@ -159,7 +159,7 @@ def get_patient_demographics(tool_context: ToolContext) -> dict:
 
 def get_active_medications(tool_context: ToolContext) -> dict:
     """
-    Retrieves the patient's current active medication list from the FHIR server.
+    Use for concise medication-list questions and active medication review.
 
     Queries MedicationRequest resources with status=active and returns medication
     names, dosage instructions, and prescribing dates.
@@ -211,7 +211,7 @@ def get_active_medications(tool_context: ToolContext) -> dict:
 
 def get_active_conditions(tool_context: ToolContext) -> dict:
     """
-    Retrieves the patient's active conditions and diagnoses from the FHIR server.
+    Use for concise problem-list and active-diagnosis questions.
 
     Queries Condition resources with clinical-status=active and returns the
     problem list with condition names, severity, and onset dates.
@@ -260,7 +260,7 @@ def get_active_conditions(tool_context: ToolContext) -> dict:
 
 def get_recent_observations(category: str, tool_context: ToolContext) -> dict:
     """
-    Retrieves recent clinical observations for the patient from the FHIR server.
+    Use for concise vitals, labs, and social-history observation questions.
 
     Args:
         category: FHIR observation category. Common values:
@@ -403,6 +403,8 @@ def _fetch_full_resource_bundle(
 
 def get_allergy_intolerance_resources_full(tool_context: ToolContext) -> dict:
     """
+    Use for allergy and intolerance review, including reaction detail.
+
     Returns full AllergyIntolerance resources for the patient.
 
     Typical fields include clinicalStatus, verificationStatus, category,
@@ -417,6 +419,8 @@ def get_allergy_intolerance_resources_full(tool_context: ToolContext) -> dict:
 
 def get_encounter_resources_full(tool_context: ToolContext) -> dict:
     """
+    Use for visit history, encounter context, providers, and locations.
+
     Returns full Encounter resources for the patient.
 
     Typical fields include status, class, type, period, reasonCode,
@@ -431,6 +435,8 @@ def get_encounter_resources_full(tool_context: ToolContext) -> dict:
 
 def get_procedure_resources_full(tool_context: ToolContext) -> dict:
     """
+    Use for procedure history and procedural context.
+
     Returns full Procedure resources for the patient.
 
     Typical fields include status, category, code, performed[x], performer,
@@ -445,6 +451,8 @@ def get_procedure_resources_full(tool_context: ToolContext) -> dict:
 
 def get_diagnostic_report_resources_full(tool_context: ToolContext) -> dict:
     """
+    Use for diagnostic report review, report conclusions, and result documents.
+
     Returns full DiagnosticReport resources for the patient.
 
     Typical fields include status, category, code, effective[x], issued,
@@ -459,6 +467,8 @@ def get_diagnostic_report_resources_full(tool_context: ToolContext) -> dict:
 
 def get_document_reference_resources_full(tool_context: ToolContext) -> dict:
     """
+    Use for clinical notes, attached documents, and document metadata.
+
     Returns full DocumentReference resources for the patient.
 
     Typical fields include status, type, category, date, author, custodian,
@@ -473,6 +483,8 @@ def get_document_reference_resources_full(tool_context: ToolContext) -> dict:
 
 def get_immunization_resources_full(tool_context: ToolContext) -> dict:
     """
+    Use for immunization history and vaccine administration details.
+
     Returns full Immunization resources for the patient.
 
     Typical fields include status, vaccineCode, occurrence[x], primarySource,
@@ -487,6 +499,8 @@ def get_immunization_resources_full(tool_context: ToolContext) -> dict:
 
 def get_care_plan_resources_full(tool_context: ToolContext) -> dict:
     """
+    Use for care-plan, goals, and planned activity review.
+
     Returns full CarePlan resources for the patient.
 
     Typical fields include status, intent, category, title, description, period,
@@ -501,6 +515,8 @@ def get_care_plan_resources_full(tool_context: ToolContext) -> dict:
 
 def get_medication_statement_resources_full(tool_context: ToolContext) -> dict:
     """
+    Use for medication-history questions about what the patient is recorded as taking.
+
     Returns full MedicationStatement resources for the patient.
 
     Typical fields include status, medication[x], effective[x], dateAsserted,
@@ -514,6 +530,8 @@ def get_medication_statement_resources_full(tool_context: ToolContext) -> dict:
 
 def get_service_request_resources_full(tool_context: ToolContext) -> dict:
     """
+    Use for orders and requested-service review.
+
     Returns full ServiceRequest resources for the patient.
 
     Typical fields include status, intent, category, code, orderDetail,
@@ -527,6 +545,8 @@ def get_service_request_resources_full(tool_context: ToolContext) -> dict:
 
 def get_imaging_study_resources_full(tool_context: ToolContext) -> dict:
     """
+    Use for imaging-study history and study metadata.
+
     Returns full ImagingStudy resources for the patient.
 
     Typical fields include status, started, procedureCode, numberOfSeries,
