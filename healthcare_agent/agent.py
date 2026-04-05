@@ -20,6 +20,16 @@ from shared.tools import (
     get_active_medications,
     get_patient_demographics,
     get_recent_observations,
+    get_allergy_intolerance_resources_full,
+    get_care_plan_resources_full,
+    get_diagnostic_report_resources_full,
+    get_document_reference_resources_full,
+    get_encounter_resources_full,
+    get_imaging_study_resources_full,
+    get_immunization_resources_full,
+    get_medication_statement_resources_full,
+    get_procedure_resources_full,
+    get_service_request_resources_full,
 )
 
 root_agent = Agent(
@@ -27,12 +37,16 @@ root_agent = Agent(
     model="gemini-2.5-flash",
     description=(
         "A clinical assistant that queries a patient's FHIR health record "
-        "to answer questions about demographics, medications, conditions, and observations."
+        "to answer questions about demographics, medications, conditions, observations, "
+        "allergies, encounters, procedures, reports, imaging, immunizations, "
+        "care plans, medication history, and service requests."
     ),
     instruction=(
         "You are a clinical assistant with secure, read-only access to a patient's FHIR health record. "
         "Use the available tools to retrieve real data from the connected FHIR server when answering questions. "
         "Always fetch data using the tools — never make up or guess clinical information. "
+        "Prefer the summary tools for concise answers, and use the full-resource tools when a question needs "
+        "complete chart details such as reports, imaging, documentation, allergies, or orders. "
         "Present medical information clearly and concisely, as if briefing a clinician. "
         "If a tool returns an error, explain what went wrong and suggest how to resolve it. "
         "If FHIR context is not available, let the caller know they need to include it in their request."
@@ -42,6 +56,16 @@ root_agent = Agent(
         get_active_medications,
         get_active_conditions,
         get_recent_observations,
+        get_allergy_intolerance_resources_full,
+        get_encounter_resources_full,
+        get_procedure_resources_full,
+        get_diagnostic_report_resources_full,
+        get_document_reference_resources_full,
+        get_immunization_resources_full,
+        get_care_plan_resources_full,
+        get_medication_statement_resources_full,
+        get_service_request_resources_full,
+        get_imaging_study_resources_full,
     ],
     # Runs before every LLM call.
     # Reads fhir_url, fhir_token, and patient_id from A2A message metadata

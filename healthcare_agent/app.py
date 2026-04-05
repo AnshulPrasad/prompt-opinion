@@ -23,7 +23,8 @@ a2a_app = create_a2a_app(
     name="healthcare_fhir_agent",
     description=(
         "A clinical assistant that queries a patient's FHIR health record to answer "
-        "questions about demographics, active medications, conditions, and observations."
+        "questions about demographics, medications, conditions, observations, allergies, "
+        "encounters, procedures, reports, imaging, immunizations, care plans, and orders."
     ),
     url=os.getenv("HEALTHCARE_AGENT_URL", os.getenv("BASE_URL", "http://localhost:8001")),
     port=8001,
@@ -54,6 +55,18 @@ a2a_app = create_a2a_app(
             name="recent-observations",
             description="Retrieve recent vitals, lab results, and social history.",
             tags=["observations", "fhir"],
+        ),
+        AgentSkill(
+            id="clinical-chart-resources",
+            name="clinical-chart-resources",
+            description="Retrieve full allergy, encounter, procedure, diagnostic report, imaging, and clinical document resources.",
+            tags=["clinical", "documents", "reports", "imaging", "fhir"],
+        ),
+        AgentSkill(
+            id="care-management-resources",
+            name="care-management-resources",
+            description="Retrieve immunizations, care plans, medication statements, and service requests.",
+            tags=["care-plan", "immunization", "orders", "medication-history", "fhir"],
         ),
     ],
 )
