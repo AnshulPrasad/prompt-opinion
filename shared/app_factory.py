@@ -56,6 +56,7 @@ from a2a.types import (
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
 
 from shared.middleware import ApiKeyMiddleware
+from shared.rate_limit import install_quota_error_sanitizer
 
 
 def create_a2a_app(
@@ -91,6 +92,8 @@ def create_a2a_app(
     Returns:
         A Starlette ASGI application ready to be served with uvicorn.
     """
+    install_quota_error_sanitizer()
+
     # Optional FHIR extension — only included when the agent supports it.
     extensions = []
     if fhir_extension_uri:
