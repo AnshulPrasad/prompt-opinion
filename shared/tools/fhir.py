@@ -100,6 +100,42 @@ def _coding_display(codings: list) -> str:
     return "Unknown"
 
 
+def _trace_context(tool_context: ToolContext, patient_id: str) -> dict:
+    """Correlation fields to attach to tool-call logs."""
+    return {
+        "task_id": tool_context.state.get("task_id", ""),
+        "context_id": tool_context.state.get("context_id", ""),
+        "message_id": tool_context.state.get("message_id", ""),
+        "patient_id": patient_id,
+    }
+
+
+def _log_tool_start(tool_name: str, trace: dict, **fields) -> None:
+    logger.info(
+        "tool_start name=%s task_id=%s context_id=%s message_id=%s patient_id=%s fields=%s",
+        tool_name,
+        trace["task_id"],
+        trace["context_id"],
+        trace["message_id"],
+        trace["patient_id"],
+        fields,
+    )
+
+
+def _log_tool_finish(tool_name: str, trace: dict, result: dict) -> None:
+    logger.info(
+        "tool_finish name=%s task_id=%s context_id=%s message_id=%s patient_id=%s status=%s count=%s error=%s",
+        tool_name,
+        trace["task_id"],
+        trace["context_id"],
+        trace["message_id"],
+        trace["patient_id"],
+        result.get("status"),
+        result.get("count"),
+        result.get("error_message"),
+    )
+
+
 # ── Tool: patient demographics ─────────────────────────────────────────────────
 
 def get_patient_demographics(tool_context: ToolContext) -> dict:
@@ -114,13 +150,18 @@ def get_patient_demographics(tool_context: ToolContext) -> dict:
         return ctx
     fhir_url, fhir_token, patient_id = ctx
 
-    logger.info("tool_get_patient_demographics patient_id=%s", patient_id)
+    trace = _trace_context(tool_context, patient_id)
+    _log_tool_start("get_patient_demographics", trace)
     try:
         patient = _fhir_get(fhir_url, fhir_token, f"Patient/{patient_id}")
     except httpx.HTTPStatusError as e:
-        return _http_error_result(e)
+        result = _http_error_result(e)
+        _log_tool_finish("get_patient_demographics", trace, result)
+        return result
     except Exception as e:
-        return _connection_error_result(e)
+        result = _connection_error_result(e)
+        _log_tool_finish("get_patient_demographics", trace, result)
+        return result
 
     names    = patient.get("name", [])
     official = next((n for n in names if n.get("use") == "official"), names[0] if names else {})
@@ -142,7 +183,7 @@ def get_patient_demographics(tool_context: ToolContext) -> dict:
             a.get("city"), a.get("state"), a.get("postalCode"), a.get("country"),
         ]))
 
-    return {
+    result = {
         "status":         "success",
         "patient_id":     patient_id,
         "name":           full_name,
@@ -153,6 +194,8 @@ def get_patient_demographics(tool_context: ToolContext) -> dict:
         "address":        address,
         "marital_status": (patient.get("maritalStatus") or {}).get("text"),
     }
+    _log_tool_finish("get_patient_demographics", trace, result)
+    return result
 
 
 # ── Tool: active medications ───────────────────────────────────────────────────
@@ -170,16 +213,21 @@ def get_active_medications(tool_context: ToolContext) -> dict:
         return ctx
     fhir_url, fhir_token, patient_id = ctx
 
-    logger.info("tool_get_active_medications patient_id=%s", patient_id)
+    trace = _trace_context(tool_context, patient_id)
+    _log_tool_start("get_active_medications", trace)
     try:
         bundle = _fhir_get(
             fhir_url, fhir_token, "MedicationRequest",
             params={"patient": patient_id, "status": "active", "_count": "50"},
         )
     except httpx.HTTPStatusError as e:
-        return _http_error_result(e)
+        result = _http_error_result(e)
+        _log_tool_finish("get_active_medications", trace, result)
+        return result
     except Exception as e:
-        return _connection_error_result(e)
+        result = _connection_error_result(e)
+        _log_tool_finish("get_active_medications", trace, result)
+        return result
 
     medications = []
     for entry in bundle.get("entry", []):
@@ -199,12 +247,14 @@ def get_active_medications(tool_context: ToolContext) -> dict:
             "requester":   (res.get("requester") or {}).get("display"),
         })
 
-    return {
+    result = {
         "status":      "success",
         "patient_id":  patient_id,
         "count":       len(medications),
         "medications": medications,
     }
+    _log_tool_finish("get_active_medications", trace, result)
+    return result
 
 
 # ── Tool: active conditions (problem list) ─────────────────────────────────────
@@ -222,16 +272,21 @@ def get_active_conditions(tool_context: ToolContext) -> dict:
         return ctx
     fhir_url, fhir_token, patient_id = ctx
 
-    logger.info("tool_get_active_conditions patient_id=%s", patient_id)
+    trace = _trace_context(tool_context, patient_id)
+    _log_tool_start("get_active_conditions", trace)
     try:
         bundle = _fhir_get(
             fhir_url, fhir_token, "Condition",
             params={"patient": patient_id, "clinical-status": "active", "_count": "50"},
         )
     except httpx.HTTPStatusError as e:
-        return _http_error_result(e)
+        result = _http_error_result(e)
+        _log_tool_finish("get_active_conditions", trace, result)
+        return result
     except Exception as e:
-        return _connection_error_result(e)
+        result = _connection_error_result(e)
+        _log_tool_finish("get_active_conditions", trace, result)
+        return result
 
     conditions = []
     for entry in bundle.get("entry", []):
@@ -248,12 +303,14 @@ def get_active_conditions(tool_context: ToolContext) -> dict:
             "recorded_date":   res.get("recordedDate"),
         })
 
-    return {
+    result = {
         "status":     "success",
         "patient_id": patient_id,
         "count":      len(conditions),
         "conditions": conditions,
     }
+    _log_tool_finish("get_active_conditions", trace, result)
+    return result
 
 
 # ── Tool: recent observations (vitals / labs) ──────────────────────────────────
@@ -277,16 +334,21 @@ def get_recent_observations(category: str, tool_context: ToolContext) -> dict:
     fhir_url, fhir_token, patient_id = ctx
 
     category = (category or "vital-signs").strip().lower()
-    logger.info("tool_get_recent_observations patient_id=%s category=%s", patient_id, category)
+    trace = _trace_context(tool_context, patient_id)
+    _log_tool_start("get_recent_observations", trace, category=category)
     try:
         bundle = _fhir_get(
             fhir_url, fhir_token, "Observation",
             params={"patient": patient_id, "category": category, "_sort": "-date", "_count": "20"},
         )
     except httpx.HTTPStatusError as e:
-        return _http_error_result(e)
+        result = _http_error_result(e)
+        _log_tool_finish("get_recent_observations", trace, result)
+        return result
     except Exception as e:
-        return _connection_error_result(e)
+        result = _connection_error_result(e)
+        _log_tool_finish("get_recent_observations", trace, result)
+        return result
 
     observations = []
     for entry in bundle.get("entry", []):
@@ -329,13 +391,15 @@ def get_recent_observations(category: str, tool_context: ToolContext) -> dict:
             ),
         })
 
-    return {
+    result = {
         "status":       "success",
         "patient_id":   patient_id,
         "category":     category,
         "count":        len(observations),
         "observations": observations,
     }
+    _log_tool_finish("get_recent_observations", trace, result)
+    return result
 
 
 # ── Full-resource tools: balanced clinical expansion ──────────────────────────
@@ -379,19 +443,27 @@ def _fetch_full_resource_bundle(
     if search_params:
         params.update({k: v for k, v in search_params.items() if v not in (None, "")})
 
-    logger.info(
-        "tool_fetch_full_resource_bundle resource_type=%s patient_id=%s patient_param=%s",
-        resource_type, patient_id, patient_param,
+    trace = _trace_context(tool_context, patient_id)
+    _log_tool_start(
+        f"get_{resource_type.lower()}_resources_full",
+        trace,
+        resource_type=resource_type,
+        patient_param=patient_param,
+        search_params=params,
     )
     try:
         bundle = _fhir_get(fhir_url, fhir_token, resource_type, params=params)
     except httpx.HTTPStatusError as e:
-        return _http_error_result(e)
+        result = _http_error_result(e)
+        _log_tool_finish(f"get_{resource_type.lower()}_resources_full", trace, result)
+        return result
     except Exception as e:
-        return _connection_error_result(e)
+        result = _connection_error_result(e)
+        _log_tool_finish(f"get_{resource_type.lower()}_resources_full", trace, result)
+        return result
 
     resources = _extract_bundle_resources(bundle)
-    return {
+    result = {
         "status":        "success",
         "patient_id":    patient_id,
         "resource_type": resource_type,
@@ -399,6 +471,8 @@ def _fetch_full_resource_bundle(
         "bundle":        bundle,
         "resources":     resources,
     }
+    _log_tool_finish(f"get_{resource_type.lower()}_resources_full", trace, result)
+    return result
 
 
 def get_allergy_intolerance_resources_full(tool_context: ToolContext) -> dict:
